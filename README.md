@@ -11,6 +11,14 @@ Here we use `python=3.9.18` because `tensorflow=2.10` don't support `python 3.11
 python -m pip install --user virtualenv
 python -m virtualenv --help
 ```
+if you cannot find the PATH of `virtualenv`, write
+
+```
+export PATH=<home_dir>/.local/bin:$PATH
+```
+
+to your `.bashrc`
+
 - Install virtual python environment
 ```
 virtualenv <Your_Env_Name> --python=python3.9
