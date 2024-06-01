@@ -19,6 +19,8 @@ export PATH=<home_dir>/.local/bin:$PATH
 
 to your `.bashrc`
 
+> **Note :**  since biohpc don't have python3.9 available, you can choose python3.8 or python3.10
+
 - Install virtual python environment
 ```
 virtualenv <Your_Env_Name> --python=python3.9
