@@ -1,0 +1,2 @@
+[napari.manifest]
+napari-svs-reader = napari_svs_reader:napari.yaml
