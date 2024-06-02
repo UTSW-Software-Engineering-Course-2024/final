@@ -14,7 +14,7 @@ import dask.array as da
 
 def svs2dask_array(
     svs_file,
-    tile_size=512,
+    tile_size=256,
     overlap=0,
     remove_last=False,
     allow_unknown_chunksizes=False,
@@ -43,7 +43,7 @@ def svs2dask_array(
         img, tile_size=tile_size, overlap=overlap, limit_bounds=True
     )
     pyramid = []
-    max_level = len(gen.level_dimensions) - 1
+    max_level = len(gen.level_dimensions)
     
     for level in range(1,max_level):
         n_tiles_x, n_tiles_y = gen.level_tiles[level]
