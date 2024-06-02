@@ -2,6 +2,10 @@
 .env
 Napari_Env/
 
+# test file
+napari-hello-1/
+svs-reader/
+
 # Compiled source files
 *.class
 *.dll

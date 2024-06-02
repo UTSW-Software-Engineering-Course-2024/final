@@ -6,7 +6,81 @@ implement multiple readers or even other plugin contributions. see:
 https://napari.org/stable/plugins/guides.html?#readers
 """
 import numpy as np
-import openslide as oSlide
+import openslide
+from openslide import deepzoom
+import dask
+import dask.array as da
+
+
+def svs2dask_array(
+    svs_file,
+    tile_size=512,
+    overlap=0,
+    remove_last=False,
+    allow_unknown_chunksizes=False,
+):
+    """Convert SVS, TIF or TIFF to dask array.
+    Parameters
+    ----------
+    svs_file : str
+            The path to the image file.
+    tile_size : int, optinal
+            The size of the chunk to be read in.
+    overlap : int, optional
+            Do not modify, overlap between neighboring tiles.
+    remove_last : bool, optional
+            Whether to remove the last tile because it has a custom size.
+    allow_unknown_chunksizes : bool, optional
+            Whether to allow different chunk sizes. If True, flexibility
+            increases, but this method becomes slower. The default is False.
+    Returns
+    -------
+    pyramid: List[dask.array.Array]
+            A list of Dask Array representing the contents of the image file.
+    """
+    img = openslide.open_slide(svs_file)
+    gen = deepzoom.DeepZoomGenerator(
+        img, tile_size=tile_size, overlap=overlap, limit_bounds=True
+    )
+    pyramid = []
+    max_level = len(gen.level_dimensions) - 1
+    
+    for level in range(1,max_level):
+        n_tiles_x, n_tiles_y = gen.level_tiles[level]
+
+        print(f"Reading level {level} with {n_tiles_x}x{n_tiles_y} tiles")
+        @dask.delayed(pure=True)
+        def get_tile(level, column, row):
+            tile = gen.get_tile(level, (column, row))
+            return np.array(tile).transpose((1, 0, 2))
+    
+        sample_tile_shape = get_tile(level, 0, 0).shape.compute()
+        rows = range(n_tiles_y - (0 if not remove_last else 1))
+        cols = range(n_tiles_x - (0 if not remove_last else 1))
+    
+        print(f"Reading level {level} with {rows}x{cols} tiles")
+        arr = da.concatenate(
+            [
+                da.concatenate(
+                    [
+                        da.from_delayed(
+                            get_tile(level, col, row), sample_tile_shape, np.uint8
+                        )
+                        for row in rows
+                    ],
+                    allow_unknown_chunksizes=allow_unknown_chunksizes,
+                    axis=1,
+                )
+                for col in cols
+            ],
+            allow_unknown_chunksizes=allow_unknown_chunksizes,
+        ).transpose([1, 0, 2])
+        
+        print(f"Reading level {level} with {arr.shape} tiles")
+    
+        pyramid.insert(0, arr)
+    return pyramid
+
 
 
 def napari_get_reader(path):
@@ -49,7 +123,7 @@ def read_svs_slide(file_path):
     myPyramid : list
         List of numpy arrays representing the slide pyramid
     """
-    slide = oSlide.OpenSlide(file_path)
+    slide = openslide.OpenSlide(file_path)
     myPyramid = []
 
     for level in range(slide.level_count):
@@ -57,6 +131,8 @@ def read_svs_slide(file_path):
         myPyramid.append(np.array(img))
 
     return myPyramid
+
+
 
 
 def reader_function(path):
@@ -87,7 +163,7 @@ def reader_function(path):
     layer_data = []
     for _path in paths:
         if _path.endswith('.svs'):
-            data = read_svs_slide(_path)
+            data = svs2dask_array(_path)
             add_kwargs = {}
             layer_type = "image"  # optional, default is "image"
             layer_data.append((data, add_kwargs, layer_type))
