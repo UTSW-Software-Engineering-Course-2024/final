@@ -1,0 +1,15 @@
+name: napari-segment-reader
+display_name: Segment Reader
+# use 'hidden' to remove plugin from napari hub search results
+visibility: public
+# see https://napari.org/stable/plugins/manifest.html for valid categories
+categories: ["Annotation", "Segmentation", "Acquisition"]
+contributions:
+  commands:
+    - id: napari-segment-reader.get_reader
+      python_name: napari_segment_reader._reader:napari_get_reader
+      title: Open data with Segment Reader
+  readers:
+    - command: napari-segment-reader.get_reader
+      accepts_directories: false
+      filename_patterns: ['*.svs']

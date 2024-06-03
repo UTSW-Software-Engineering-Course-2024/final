@@ -1,0 +1,15 @@
+LICENSE
+MANIFEST.in
+README.md
+pyproject.toml
+src/napari_label_reader/__init__.py
+src/napari_label_reader/_reader.py
+src/napari_label_reader/napari.yaml
+src/napari_label_reader.egg-info/PKG-INFO
+src/napari_label_reader.egg-info/SOURCES.txt
+src/napari_label_reader.egg-info/dependency_links.txt
+src/napari_label_reader.egg-info/entry_points.txt
+src/napari_label_reader.egg-info/requires.txt
+src/napari_label_reader.egg-info/top_level.txt
+src/napari_label_reader/_tests/__init__.py
+src/napari_label_reader/_tests/test_reader.py

@@ -1,0 +1,2 @@
+[napari.manifest]
+napari-label-reader = napari_label_reader:napari.yaml

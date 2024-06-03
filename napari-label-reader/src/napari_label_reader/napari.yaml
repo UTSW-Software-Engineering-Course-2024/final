@@ -1,0 +1,15 @@
+name: napari-label-reader
+display_name: Label Reader
+# use 'hidden' to remove plugin from napari hub search results
+visibility: public
+# see https://napari.org/stable/plugins/manifest.html for valid categories
+categories: ["Annotation", "Segmentation", "Acquisition"]
+contributions:
+  commands:
+    - id: napari-label-reader.get_reader
+      python_name: napari_label_reader._reader:napari_get_reader
+      title: Open data with Label Reader
+  readers:
+    - command: napari-label-reader.get_reader
+      accepts_directories: false
+      filename_patterns: ['*.svs']

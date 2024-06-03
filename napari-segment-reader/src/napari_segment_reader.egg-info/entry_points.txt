@@ -1,0 +1,2 @@
+[napari.manifest]
+napari-segment-reader = napari_segment_reader:napari.yaml
