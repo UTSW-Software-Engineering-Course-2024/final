@@ -11,7 +11,10 @@ from openslide import deepzoom
 import dask
 import dask.array as da
 import napari as npr
+from stardist.models import StarDist2D
+from csbdeep.utils import normalize
 
+model = StarDist2D.from_pretrained('2D_versatile_fluo')
 
 def rgb2hed_custom(rgb_image):
     hed_from_rgb = np.linalg.inv(np.array([[0.65, 0.70, 0.29],
@@ -24,7 +27,10 @@ def rgb2hed_custom(rgb_image):
     np.maximum(stains, 0, out=stains)
     return stains
 
-def process_tile(tile):
+def process_tile(column, row, level, gen):
+
+    tile = np.array(gen.get_tile(level, (column, row))).transpose((1, 0, 2))
+
     hed_tile = rgb2hed_custom(tile)
    
     labels= get_mask(hed_tile[:,:,0])
@@ -40,19 +46,17 @@ def process_tile(tile):
  
  
 def get_mask(channel):
-    from stardist.models import StarDist2D
-    from csbdeep.utils import normalize
-    # prints a list of available models
-    StarDist2D.from_pretrained()
+    
+
  
     # creates a pretrained model
-    model = StarDist2D.from_pretrained('2D_versatile_fluo')
+    
    
     # np.save('channel.npy', channel)
     
-   
+    n_tiles = model._guess_n_tiles(channel)
     print(channel.shape)
-    labels, _ = model.predict_instances(normalize(channel))
+    labels, _ = model.predict_instances(normalize(channel), n_tiles = n_tiles)
    
     return labels
 
@@ -116,7 +120,9 @@ def svs2dask_array(
         img, tile_size=tile_size, overlap=overlap, limit_bounds=True
     )
     pyramid = []
-    max_level = len(gen.level_dimensions) - 1
+    max_level = len(gen.level_dimensions)
+    
+    segment = dask.delayed(process_tile)
     
     for level in range(1,max_level):
         n_tiles_x, n_tiles_y = gen.level_tiles[level]
@@ -126,12 +132,35 @@ def svs2dask_array(
         def get_tile(level, column, row):
             tile = gen.get_tile(level, (column, row))
             return np.array(tile).transpose((1, 0, 2))
+        
+        
     
         sample_tile_shape = get_tile(level, 0, 0).shape.compute()
         rows = range(n_tiles_y - (0 if not remove_last else 1))
         cols = range(n_tiles_x - (0 if not remove_last else 1))
     
         print(f"Reading level {level} with {rows}x{cols} tiles")
+
+        if level == max_level-1:
+
+            label = da.concatenate(
+            [
+                da.concatenate(
+                    [
+                        da.from_delayed(
+                            segment(col, row, level, gen), sample_tile_shape[:2], np.uint8
+                        )
+                        for row in rows
+                    ],
+                    allow_unknown_chunksizes=allow_unknown_chunksizes,
+                    axis=1,
+                )
+                for col in cols
+            ],
+            allow_unknown_chunksizes=allow_unknown_chunksizes,
+            ).transpose([1, 0])
+        
+            
         arr = da.concatenate(
             [
                 da.concatenate(
@@ -152,7 +181,8 @@ def svs2dask_array(
         print(f"Reading level {level} with {arr.shape} tiles")
     
         pyramid.insert(0, arr)
-    return pyramid
+    print(label.shape)
+    return pyramid, label
 
 def reader_function(path):
     """Take a path or list of paths and return a list of LayerData tuples.
@@ -184,17 +214,14 @@ def reader_function(path):
     
     for _path in paths:
         if _path.endswith('.svs'):
-            pyramid = svs2dask_array(_path)
+            pyramid, label = svs2dask_array(_path)
             # label_delayed = [dask.delayed(process_tile)(image) for image in pyramid]
             # label_array = [da.from_delayed(delayed_obj, shape=image.shape[:2], dtype=int) for delayed_obj, image in zip(label_delayed, pyramid)]
-            segment = dask.delayed(process_tile)
             labels = [da.zeros(arr.shape[:2]) for arr in pyramid]
-            labels[0] = da.from_delayed(segment(pyramid[0].compute()), shape = pyramid[0].shape[:2], dtype= np.uint8)
-
+            labels[0] = label
             add_kwargs = {}
             layer_type = "image"  # optional, default is "image"
             layer_data.append((pyramid, add_kwargs, layer_type))
             layer_data.append((labels, {'name':'label','opacity': 0.8, 'blending':'additive','colormap':'red'}, layer_type))
     
     return layer_data
-
