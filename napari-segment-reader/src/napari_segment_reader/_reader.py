@@ -52,7 +52,7 @@ def get_mask(channel):
     
    
     print(channel.shape)
-    labels, _ = model.predict_instances(normalize(channel))
+    labels, _ = model.predict_instances(normalize(channel),n_tiles=(28,23))
    
     return labels
 
@@ -116,7 +116,7 @@ def svs2dask_array(
         img, tile_size=tile_size, overlap=overlap, limit_bounds=True
     )
     pyramid = []
-    max_level = len(gen.level_dimensions) - 1
+    max_level = len(gen.level_dimensions) 
     
     for level in range(1,max_level):
         n_tiles_x, n_tiles_y = gen.level_tiles[level]
