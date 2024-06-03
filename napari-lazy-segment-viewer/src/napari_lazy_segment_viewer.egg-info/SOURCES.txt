@@ -1,0 +1,15 @@
+LICENSE
+MANIFEST.in
+README.md
+pyproject.toml
+src/napari_lazy_segment_viewer/__init__.py
+src/napari_lazy_segment_viewer/_reader.py
+src/napari_lazy_segment_viewer/napari.yaml
+src/napari_lazy_segment_viewer.egg-info/PKG-INFO
+src/napari_lazy_segment_viewer.egg-info/SOURCES.txt
+src/napari_lazy_segment_viewer.egg-info/dependency_links.txt
+src/napari_lazy_segment_viewer.egg-info/entry_points.txt
+src/napari_lazy_segment_viewer.egg-info/requires.txt
+src/napari_lazy_segment_viewer.egg-info/top_level.txt
+src/napari_lazy_segment_viewer/_tests/__init__.py
+src/napari_lazy_segment_viewer/_tests/test_reader.py

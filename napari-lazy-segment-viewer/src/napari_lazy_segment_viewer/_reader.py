@@ -24,7 +24,6 @@ def rgb2hed_custom(rgb_image):
     np.maximum(stains, 0, out=stains)
     return stains
 
-
 def process_tile(tile):
     hed_tile = rgb2hed_custom(tile)
    
@@ -38,7 +37,8 @@ def process_tile(tile):
     # result[:, :, 0] = labels  # Set only the first channel with labels
  
     return mask*255
-
+ 
+ 
 def get_mask(channel):
     from stardist.models import StarDist2D
     from csbdeep.utils import normalize
@@ -187,8 +187,10 @@ def reader_function(path):
             pyramid = svs2dask_array(_path)
             # label_delayed = [dask.delayed(process_tile)(image) for image in pyramid]
             # label_array = [da.from_delayed(delayed_obj, shape=image.shape[:2], dtype=int) for delayed_obj, image in zip(label_delayed, pyramid)]
-            labels = [np.zeros(arr.shape[:2]) for arr in pyramid]
-            labels[0] = process_tile(pyramid[0].compute())
+            segment = dask.delayed(process_tile)
+            labels = [da.zeros(arr.shape[:2]) for arr in pyramid]
+            labels[0] = da.from_delayed(segment(pyramid[0].compute()), shape = pyramid[0].shape[:2], dtype= np.uint8)
+
             add_kwargs = {}
             layer_type = "image"  # optional, default is "image"
             layer_data.append((pyramid, add_kwargs, layer_type))

@@ -1,0 +1,2 @@
+[napari.manifest]
+napari-lazy-segment-viewer = napari_lazy_segment_viewer:napari.yaml
